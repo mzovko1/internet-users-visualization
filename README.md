@@ -1,11 +1,26 @@
-# internet-users-visualization
-Internet users visualization
+# Internet Users Visualization
+A web application for visualizing internet users across the globe.
 
-## Pokretanje aplikacije
-### Klonirajte ovaj repozitorij
+## Getting Started
+Follow these steps to set up and run the application on your local machine.
+
+## Requirements
+Ensure you have Python installed on your system. You can download it from python.org.
+
+## Installation and Setup
+Clone the Repository
+Open your terminal or command prompt and clone the repository:
+
 git clone https://github.com/mzovko1/internet-users-visualization
-### command prompt
-navigirajte do kloniranog direktorija
-Pokrenite naredbu python-m http.server 
-### U pregledniku otvorite stranicu na pripadajućem portu
+Navigate to the Project Directory
+
+#### Change into the cloned repository directory:
+cd internet-users-visualization
+Start the Local Server
+
+#### Run the following command to start a simple HTTP server:
+python -m http.server
+
+#### Open the Application in Your Browser
+Open your web browser and go to the following URL:
 http://localhost:8000/
