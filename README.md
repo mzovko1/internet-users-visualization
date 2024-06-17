@@ -16,9 +16,9 @@ Navigate to the Project Directory
 
 #### Change into the cloned repository directory:
 cd internet-users-visualization
-Start the Local Server
 
-#### Run the following command to start a simple HTTP server:
+#### Start the Local Server
+Run the following command to start a simple HTTP server:
 python -m http.server
 
 #### Open the Application in Your Browser
