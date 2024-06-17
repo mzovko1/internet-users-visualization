@@ -1,0 +1,98 @@
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #207296;
+    color: white;
+    padding: 10px 20px;
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-title {
+  font-size: xx-large;
+    margin-right: 20px;
+}
+
+.navbar-right {
+  font-size:larger;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-button {
+    margin-right: 30px;
+    color: white;
+}
+.navbar-button:hover{
+  color: rgba(45, 156, 190, 0.582);
+}
+
+.bar-chart-container {
+    display: flex;
+    align-items: flex-start; /* Align items to the start of the container */
+}
+
+#barChartSvg {
+    flex: 1;
+}
+
+.legend-container {
+    margin-left: 20px; /* Adjust spacing as needed */
+}
+
+
+
+.tooltip {
+    position: absolute;
+    text-align: center;
+    padding: 4px;
+    font: 12px sans-serif;
+    background: lightsteelblue;
+    border: 0.5px solid #666;
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.custom-select{
+    width: 30px;
+}
+.dropdown-container {
+    display: flex;
+    align-items: center;
+}
+
+.dropdown {
+    margin-left: 50px;
+}
+
+.dropdown select {
+    display: inline-block;
+    margin-right: 10px;
+}
+.button-dropdown-container {
+    display: flex;
+    align-items: flex-start; /* Ako želite da gumb bude na vrhu */
+}
+
+.button-dropdown-container button {
+    margin-right: 10px;
+}
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Postavite visinu kontejnera na visinu ekrana */
+}
+
+.row {
+    text-align: center; /* Postavite sadržaj u retku na centar */
+}
+.column2{
+    text-align: center;
+    padding: 20px;
+}

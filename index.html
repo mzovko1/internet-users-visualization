@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internet Users</title>
+    <link rel="stylesheet" type="text/css" href="style/index.css" media="screen" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="shortcut icon" href="images/main.png">
+    <script src="scripts/d3.js"></script>
+    <script src="scripts/d3v4.js"></script>
+    <script src="scripts/jquery.js"></script>
+    <script src="scripts/topojson.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <span class="navbar-title">Internet Users in the World</span>
+        </div>
+        <div class="navbar-right">
+            <a href="countries.html" class="navbar-button">World Map</a>
+            <a href="index.html" class="navbar-button">Charts</a>
+        </div>
+    </nav>
+    <div class="content">
+    <header>
+        <h1 id="title" style="text-align: center; width: 100%; font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif; margin: 10px;">
+            Charts
+        </h1>
+        <h3 id="title1"style="text-align: center; width: 100%; font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif; margin: 10px;">Internet Users Over Time</h3>
+    </header>
+    <div class="button-dropdown-container">
+        <div class="dropdown">
+            <select onchange="updateLineGraph()" class="custom-select" id="country1">
+                <option disabled selected>Select country:</option>
+            </select>
+            <div id="tooltip" class="tooltip" style="opacity: 0;"></div>
+        </div>
+    </div>    
+    </div>
+    <h3 id="graphTitle" style="text-align: center; width: 50%;"></h3>
+    <div class="container">
+        <div class="row">
+            <div class="column1">
+                <div id="lineChart"></div>
+            </div>
+        </div>
+    </div>    
+        <div class="column2">
+            <h3>Internet users comparison</h3>
+            <div class="dropdown-container">
+                <div class="dropdown" style="margin: 10px;">
+                    <select onchange="updateBarGraph()" class="custom-select" id="country2">
+                        <option disabled selected>Select country 1:</option>
+                    </select>
+                </div>
+                <div class="dropdown" style="margin-right: 10px;">
+                    <select onchange="updateBarGraph()" class="custom-select" id="country3">
+                        <option disabled selected>Select country 2:</option>
+                    </select>
+                </div>
+                <div class="dropdown">
+                    <select onchange="updateBarGraph()" class="custom-select" id="year">
+                        <option disabled selected>Select year:</option>
+                    </select>
+                </div>
+            </div>
+            <div id="barChartContainer" class="bar-chart-container">
+                <div id="barChartSvg"></div>
+                <div id="legendContainer" class="legend-container"></div>
+            </div>                       
+        </div>
+        <svg height="0" width="0">
+            <defs>
+              <linearGradient id="line-gradient" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#78a0cd"/>
+                <stop offset="50%" stop-color="#3d5a7c"/>
+                <stop offset="100%" stop-color="#0c3665"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          
+    <script>
+        var margin = { top: 50, right: 50, bottom: 50, left: 90 };
+    var width = window.innerWidth - margin.left - margin.right;
+    var height = 500 - margin.top - margin.bottom;
+
+        var x = d3.scaleTime().range([0, width]);
+        var y = d3.scaleLinear().range([height, 0]);
+
+        var line = d3.line()
+            .x(function(d) { return x(d.Year); })
+            .y(function(d) { return y(d["Number of Internet users"]); });
+
+        var svgLine = d3.select("#lineChart").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var svgBar = d3.select("#barChart").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+        function updateLineGraph() {
+            var country1 = document.getElementById('country1').value;
+
+            if (country1 !== "Country 1") {
+                var country1Data = dataset.filter(d => d.Entity === country1);
+                updateLineChart(country1Data, country1);
+            }
+        }
+
+        function updateLineChart(data, country) {
+    x.domain(d3.extent(data, function(d) { return d.Year; }));
+    y.domain([0, d3.max(data, function(d) { return d["Number of Internet users"]; })]);
+
+    svgLine.selectAll("*").remove();
+
+    svgLine.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
+    svgLine.append("g")
+        .call(d3.axisLeft(y));
+
+        svgLine.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .attr("fill", "none")
+        .style("stroke", "url(#line-gradient)") 
+        .attr("d", line) 
+        .call(transition); 
+
+// Funkcija za animaciju
+    function transition(path) {
+        path.transition()
+            .duration(2000) 
+            .attrTween("d", tween);
+    }
+
+    function tween() {
+        var interpolate = d3.scaleQuantile()
+            .domain([0, 1])
+            .range(d3.range(1, data.length + 1));
+        return function(t) {
+            return line(data.slice(0, interpolate(t)));
+        };
+    }
+
+
+    var tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+            
+
+        svgLine.selectAll(".dot")
+        .data(data)
+        .enter().append("circle")
+        .attr("class", "dot")
+        .attr("cx", function(d) { return x(d.Year); })
+        .attr("cy", function(d) { return y(d["Number of Internet users"]); })
+        .attr("r", 5)
+        .style("fill", "steelblue")
+        .on("mouseover", function(d) {
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html("Year: " + d.Year + "<br/>Number of Internet users: " + d["Number of Internet users"])
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+        })
+        .on("mouseout", function(d) {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+
+
+        svgLine.append("text")
+            .attr("x", (width / 2))
+            .attr("y", 0 - (margin.top / 2))
+            .attr("text-anchor", "middle")
+            .style("font-size", "20px")
+            .text("Number of Internet Users in " + country + " Over Time");
+    }
+
+
+        function updateBarGraph() {
+        var country2 = document.getElementById('country2').value;
+        var country3 = document.getElementById('country3').value;
+        var year = +document.getElementById('year').value;
+
+        if (country2 !== "Country 2" && country3 !== "Country 3" && year !== "Year") {
+            var country2Data = dataset.find(d => d.Entity === country2 && d.Year === year);
+            var country3Data = dataset.find(d => d.Entity === country3 && d.Year === year);
+            updateBarChart(country2Data, country3Data, year);
+        }
+    }
+
+    function updateBarChart(data1, data2, year) {
+        var barData = [
+            { country: data1.Entity, users: data1["Number of Internet users"], color: "#1E6173" }, 
+            { country: data2.Entity, users: data2["Number of Internet users"], color: "#3484AD" }
+        ];
+
+        var xBar = d3.scaleBand().range([0, width]).padding(0.1);
+        var yBar = d3.scaleLinear().range([height, 0]);
+
+        xBar.domain(barData.map(function(d) { return d.country; }));
+        yBar.domain([0, d3.max(barData, function(d) { return d.users; })]);
+
+        d3.select("#barChartSvg").selectAll("*").remove(); // Clear existing chart
+
+        var svgBar = d3.select("#barChartSvg").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svgBar.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(xBar))
+            .selectAll("text")
+            .style("font-size", "20px");
+
+        svgBar.append("g")
+            .call(d3.axisLeft(yBar));
+
+        var barColor = d3.scaleOrdinal()
+            .domain(barData.map(function(d) { return d.country; }))
+            .range(["#1E6173", "#3484AD"]);
+
+        svgBar.selectAll(".bar")
+            .data(barData)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", function(d) { return xBar(d.country); })
+            .attr("width", xBar.bandwidth())
+            .attr("y", function(d) { return yBar(0); })
+            .attr("height", 0)
+            .style("fill", function(d) { return barColor(d.country); })
+            .transition()
+            .delay(function(d, i) { return i * 100; })
+            .duration(1300)
+            .attr("y", function(d) { return yBar(d.users); })
+            .attr("height", function(d) { return height - yBar(d.users); });
+
+        // Add legend
+        var legendContainer = d3.select("#legendContainer");
+        legendContainer.selectAll("*").remove(); // Clear existing legend
+
+        var legend = legendContainer.selectAll(".legend")
+            .data(barData)
+            .enter().append("div")
+            .attr("class", "legend")
+            .style("display", "flex")
+            .style("align-items", "center")
+            .style("margin-bottom", "5px");
+
+        legend.append("div")
+            .style("background-color", function(d) { return barColor(d.country); })
+            .style("width", "20px")
+            .style("height", "20px")
+            .style("margin-right", "5px");
+
+        legend.append("div")
+            .style("font-size", "20px")
+            .text(function(d) { return d.country; });
+    }
+
+
+            var dataset;
+            d3.json("data/internet_users.json", function(error, data) {
+                if (error) throw error;
+
+                dataset = data;
+
+                var countries = Array.from(new Set(dataset.map(d => d.Entity))).sort();
+                var years = Array.from(new Set(dataset.map(d => d.Year))).sort();
+
+                var country1Select = document.getElementById('country1');
+                var country2Select = document.getElementById('country2');
+                var country3Select = document.getElementById('country3');
+                var yearSelect = document.getElementById('year');
+
+                countries.forEach(country => {
+                    var opt1 = document.createElement('option');
+                    var opt2 = document.createElement('option');
+                    var opt3 = document.createElement('option');
+                    opt1.value = country;
+                    opt1.innerHTML = country;
+                    opt2.value = country;
+                    opt2.innerHTML = country;
+                    opt3.value = country;
+                    opt3.innerHTML = country;
+                    country1Select.appendChild(opt1);
+                    country2Select.appendChild(opt2);
+                    country3Select.appendChild(opt3);
+                });
+
+                years.forEach(year => {
+                    var optYear = document.createElement('option');
+                    optYear.value = year;
+                    optYear.innerHTML = year;
+                    yearSelect.appendChild(optYear);
+                });
+            });
+
+
+            d3.json("data/world-110m.json").then(function(worldData) {
+                var projection = d3.geoMercator()
+        .scale(130)
+        .translate([width / 2, height / 1.5]);
+
+    var path = d3.geoPath()
+        .projection(projection);
+
+    svg.append("path")
+        .datum(countries)
+        .attr("d", path)
+        .style("stroke", "white")
+        .style("stroke-width", 0.5)
+        .style("fill", "gray");
+
+    });
+
+    </script>
+</body>
+</html>
+

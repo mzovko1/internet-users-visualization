@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internet Users in the World</title>
+    <link rel="stylesheet" type="text/css" href="style/countries.css" media="screen" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <link rel="shortcut icon" href="images/main.png">
+    <script src="scripts/d3v4.js"></script>
+    <script src="scripts/topojson.js"></script>
+    <script src="scripts/jquery.js"></script>
+
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-left">
+            <span class="navbar-title">Internet Users in the World</span>
+        </div>
+        <div class="navbar-right">
+            <a href="countries.html" class="navbar-button">World Map</a>
+            <a href="index.html" class="navbar-button">Charts</a>
+        </div>
+    </nav>
+    <div class="content">
+        <header>
+            <h1 id="title" style="text-align: center; width: 100%; font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;">
+                World map
+            </h1>
+        </header>
+        <br />
+        <div class="row">
+            <div class="column" style="width:100%">
+                <h1 id="country_name"></h1>
+                <button type="button" class="btn btn-secondary" id="btnReset" onclick="reset()">Reset</button>
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="yearDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Year
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="yearDropdown" id="yearMenu">
+                    </div>
+                </div>
+                <div id="map"></div>
+                <button style="margin-top: 10px;" type="button" class="btn btn-secondary" onclick="startTimer()" id="btnStart">Play time-lapse</button>
+                <button style="margin-top: 10px;" type="button" class="btn btn-secondary" onclick="stopTimer()" id="btnStop" disabled>Stop</button>
+            </div>
+            <div class="column" style="width:100%">
+                <div class="column" style="width:max-width">
+                    <table>
+                        <thead>
+                            <th>
+                                <p style="font-size:22px;">Users per country in a year</p>
+                            </th>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td rowspan="7" style="margin:0">
+                                    <div id="colorGradient" class="list-group-item d-flex justify-content-between">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>100000001+</td>
+                            </tr>
+                            <tr>
+                                <td>10000001-100000000</td>
+                            </tr>
+                            <tr>
+                                <td>1000001-10000000</td>
+                            </tr>
+                            <tr>
+                                <td>100001-1000000</td>
+                            </tr>
+                            <tr>
+                                <td>10001-100000</td>
+                            </tr>
+                            <tr>
+                                <td>0-10000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/topojson.v2.min.js"></script>
+    <script>
+        var countries = [];
+        var filteredUsers = [];
+        var year = window.localStorage.getItem("year");
+        if (year == null) {
+            window.localStorage.setItem("year", 1990);
+            year = 1990;
+        }
+        var startDate = 1990;
+        var lastDate = 2020;
+
+        var tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+        var width = window.innerWidth / 2,
+            height = window.innerHeight / 2,
+            active = d3.select(null);
+
+        var projection = d3.geoMercator()
+            .scale(100)
+            .translate([width / 2, height / 2]);
+
+        var zoom = d3.zoom().on("zoom", zoomed);
+        var path = d3.geoPath().projection(projection);
+
+        var svg = d3.select("#map").append("svg")
+            .attr("width", width + 200)
+            .attr("height", height+200)
+            .on("click", stopped, true);
+
+        svg.append("rect")
+            .attr("class", "background")
+            .attr("width", width)
+            .attr("height", height)
+            .on("click", reset);
+
+        var g = svg.append("g");
+        svg.call(zoom);
+
+        generateYearDropdown();
+        filterByYear(year);
+
+        var countryNameHeader = document.getElementById("country_name");
+        countryNameHeader.innerText = "Year - " + year;
+
+        function clicked(d) {
+            if (active.node() === this) {
+                return reset();
+            }
+            active.classed("active", false);
+            active = d3.select(this).classed("active", true);
+
+            var countryData = countries.find(x => x.id == d.id);
+            var countryCode = countryData ? countryData.code : "Unknown";
+            var userCount = getUserCount(countryCode);
+
+            countryNameHeader.innerText = `Country - ${countryCode} (${year}), Users: ${userCount}`;
+
+            var bounds = path.bounds(d),
+                dx = bounds[1][0] - bounds[0][0],
+                dy = bounds[1][1] - bounds[0][1],
+                x = (bounds[0][0] + bounds[1][0]) / 2,
+                y = (bounds[0][1] + bounds[1][1]) / 2,
+                scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height))),
+                translate = [width / 2 - scale * x, height / 2 - scale * y];
+
+            svg.transition()
+                .duration(750)
+                .call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+        }
+
+        function getUserCount(countryCode) {
+            var countryData = filteredUsers.find(x => x.Entity === countryCode);
+            return countryData ? countryData["Number of Internet users"] : 0;
+        }
+
+        function filterByYear(newYear) {
+            d3.json("data/internet_users.json", function (error, dataset) {
+                if (error) {
+                    console.error('Error loading data:', error);
+                    return;
+                }
+                filteredUsers = dataset.filter(x => x.Year == newYear);
+                loadMap(newYear);
+                reset();
+            });
+        }
+
+        function getColorNumber(id) {
+            var country = countries.find(x => x.id == id);
+            if (!country) return 0;
+            var countryData = filteredUsers.find(x => x.Entity === country.code);
+            return countryData ? countryData["Number of Internet users"] : 0;
+        }
+
+        function reset() {
+            countryNameHeader.innerText = "Year -" + year;
+            active.classed("active", false);
+            active = d3.select(null);
+            resetInfo();
+            svg.transition()
+                .duration(750)
+                .call(zoom.transform, d3.zoomIdentity);
+        }
+
+
+        var colors = d3.scaleThreshold()
+            .domain([1, 1001, 10001, 100001, 1000001, 10000001, 100000001, 1000000001])
+            .range(["#f7fbff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#084594"]);
+
+
+        function loadMap(year) {
+            d3.json("country_names.json", function (error, data) {
+                countries = data;
+
+                d3.json("data/world-110m.json", function (error, world) {
+                    if (error) throw error;
+                    g.selectAll("path").remove();
+                    g.selectAll("path")
+                        .data(topojson.feature(world, world.objects.countries).features)
+                        .enter().append("path")
+                        .attr("d", path)
+                        .attr("class", "feature")
+                        .style("fill", function (d) {
+                            var color = colors(getColorNumber(d.id));
+                            return color;
+                        })
+                        .on("click", clicked)
+                        .on("mouseover", function (d) {
+                            var countryData = countries.find(x => x.id == d.id);
+                            var countryCode = countryData ? countryData.code : "Unknown";
+                            var userCount = getUserCount(countryCode);
+
+                            tooltip.transition().duration(200).style("opacity", .9);
+                            tooltip.html(`Country: ${countryCode} <br> Users: ${userCount}`)
+                                .style("left", (d3.event.pageX) + "px")
+                                .style("top", (d3.event.pageY - 28) + "px");
+                        })
+                        .on("mouseout", function (d) {
+                            tooltip.transition().duration(500).style("opacity", 0);
+                        });
+
+                    g.append("path")
+                        .datum(topojson.mesh(world, world.objects.countries, function (a, b) { return a !== b; }))
+                        .attr("class", "mesh")
+                        .attr("d", path);
+                });
+            });
+        }
+
+        function zoomed() {
+            g.style("stroke-width", 1.5 / d3.event.transform.k + "px");
+            g.attr("transform", d3.event.transform);
+        }
+
+        function stopped() {
+            if (d3.event.defaultPrevented) d3.event.stopPropagation();
+        }
+
+        function generateYearDropdown() {
+            var yearMenu = d3.select("#yearMenu");
+            for (var i = startDate; i <= lastDate; i++) {
+                yearMenu.append("a")
+                    .attr("class", "dropdown-item")
+                    .attr("href", "#")
+                    .attr("data-year", i)
+                    .text(i)
+                    .on("click", function () {
+                        var selectedYear = d3.select(this).attr("data-year");
+                        year = selectedYear;
+                        window.localStorage.setItem("year", selectedYear);
+                        filterByYear(selectedYear);
+                        countryNameHeader.innerText = "Year - " + selectedYear;
+                    });
+            }
+        }
+
+        var timer;
+
+        function startTimer() {
+            document.getElementById("btnStart").disabled = true;
+            document.getElementById("btnStop").disabled = false;
+            timer = setInterval(function () {
+                if (year < lastDate) {
+                    year++;
+                } else {
+                    year = startDate;
+                }
+                window.localStorage.setItem("year", year);
+                filterByYear(year);
+                countryNameHeader.innerText = "Year - " + year;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            document.getElementById("btnStart").disabled = false;
+            document.getElementById("btnStop").disabled = true;
+            clearInterval(timer);
+        }
+
+    </script>
+</body>
+
+</html>
