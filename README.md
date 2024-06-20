@@ -1,3 +1,6 @@
+##Page
+https://mzovko1.github.io/internet-users-visualization/
+
 # Internet Users Visualization
 A web application for visualizing internet users across the globe.
 
